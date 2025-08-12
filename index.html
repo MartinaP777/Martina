@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Rutiny pro děti</title>
+
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#ffffff" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Rutiny" />
+
+<style>
+  :root{
+    --bg:#f7f7fb; --card:#ffffff; --text:#1f2833; --muted:#6b7280;
+    --ok:#22c55e; --danger:#ef4444; --pill:#fff3b0; --chip:#fff8cf; --chip-ink:#5a4a00;
+    --border:#e5e7eb; --shadow:0 4px 20px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+  header{position:sticky;top:0;z-index:20;background:var(--bg);padding:10px 14px 0}
+  .bar{display:flex;align-items:center;gap:12px}
+  .chips{display:flex;gap:10px;flex-wrap:wrap}
+  .chip{border:0;border-radius:18px;background:var(--chip);padding:16px 22px;display:inline-flex;align-items:center;gap:10px;font-size:18px;color:var(--chip-ink);box-shadow:var(--shadow)}
+  .chip .e{font-size:34px;line-height:1}
+  .chip.active{background:var(--pill)}
+  .points{margin-left:auto;background:#fff;border-radius:999px;padding:10px 14px;font-weight:700;box-shadow:var(--shadow)}
+  nav.tabs{display:flex;gap:8px;padding:10px 14px 12px;background:var(--bg)}
+  nav.tabs .tab{border:0;background:#fff;padding:10px 14px;border-radius:12px;box-shadow:var(--shadow);font-weight:700}
+  nav.tabs .tab.active{background:var(--pill)}
+  main{padding:14px 14px 80px}
+  .view{display:none}.view.active{display:block}
+  h1{font-size:22px;margin:18px 0 8px}
+  .card{background:var(--card);border-radius:16px;padding:14px;box-shadow:var(--shadow);margin-bottom:12px}
+  .row{display:flex;align-items:center;gap:12px}
+  .spacer{flex:1}
+  .emoji{font-size:36px;width:44px;text-align:center}
+  h2{margin:0;font-size:18px}
+  p{margin:0;color:var(--muted);font-size:14px}
+  .btn{border:0;padding:10px 14px;border-radius:12px;font-weight:900}
+  .btn.big{font-size:18px;padding:14px 18px}
+  .btn.ok{background:var(--ok);color:#fff}
+  .btn.gray{background:#f1f5f9;color:#374151}
+  .btn.alt{background:#eef2ff}
+  .btn.sm{padding:6px 10px;border-radius:10px;font-weight:700}
+  .btn.danger{background:var(--danger);color:#fff}
+  .tag{background:#e5e7eb;color:#374151;border-radius:999px;padding:6px 10px;font-weight:700;font-size:13px}
+  .muted{color:var(--muted);font-size:13px}
+
+  .list-row{
+    display:grid;grid-template-columns:46px 1fr auto auto auto auto 1fr auto auto;
+    gap:10px;align-items:center;padding:10px 12px;background:#fff;border-radius:12px;box-shadow:var(--shadow);margin-bottom:10px
+  }
+  .label-sec{justify-self:start}
+
+  .modal-back{position:fixed;inset:0;background:rgba(0,0,0,.3);display:none;align-items:center;justify-content:center;z-index:50}
+  .modal{background:#fff;border-radius:16px;padding:16px;width:min(560px,92vw);box-shadow:var(--shadow)}
+  .grid{display:grid;grid-template-columns:120px 1fr;gap:10px;align-items:center}
+  .grid .full{grid-column:1/-1}
+  label{color:#475569;font-size:14px}
+  input,select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);font-size:16px;background:#fff}
+
+  #starBurst,#heartBurst{position:fixed;inset:0;pointer-events:none;z-index:40;display:none}
+  #starBurst.active,#heartBurst.active{display:block}
+  .star,.heart{position:fixed;font-size:28px;opacity:0;transform:translate(-50%,-50%) scale(.6);animation:pop 1.8s ease-out forwards}
+  @keyframes pop{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}
+    10%{opacity:1}
+    100%{opacity:0;transform:translate(-50%,-50%) translateY(-120px) scale(1.2)}
+  }
+
+  @media (max-width:780px){
+    .list-row{grid-template-columns:46px 1fr auto auto auto 1fr auto auto}
+    .label-sec{display:none}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="chips" id="headerChips"></div>
+    <div class="points">Body: <span id="points">0</span></div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="routines">Rutiny</button>
+  <button class="tab" data-tab="rewards">Odměny</button>
+  <button class="tab" data-tab="parent">Rodič</button>
+</nav>
+
+<main>
+  <section id="routines" class="view active">
+    <h1>Ráno</h1>
+    <div id="list-morning"></div>
+
+    <h1>Přes den</h1>
+    <div id="list-day"></div>
+
+    <h1>Večer</h1>
+    <div id="list-evening"></div>
+  </section>
+
+  <section id="rewards" class="view">
+    <h1>Odměny</h1>
+    <div id="rewards-list"></div>
+  </section>
+
+  <section id="parent" class="view">
+    <h1>Děti</h1>
+    <div id="parent-children"></div>
+    <div class="card">
+      <div class="grid">
+        <label>Emoji</label><input id="add-child-emoji" placeholder="👧" />
+        <label>Jméno</label><input id="add-child-name" placeholder="Jméno" />
+        <div class="full"><button class="btn alt" id="btn-add-child">Přidat dítě</button></div>
+      </div>
+    </div>
+
+    <h1>Správa rutin</h1>
+    <div id="parent-routines"></div>
+    <div class="card">
+      <div class="grid">
+        <label>Emoji</label><input id="add-r-emoji" placeholder="🪥" />
+        <label>Název</label><input id="add-r-title" placeholder="Např. Vyčistit si zuby" />
+        <label>Body</label><input id="add-r-points" type="number" inputmode="numeric" value="5" />
+        <label>Sekce</label>
+        <select id="add-r-cat">
+          <option value="morning">Ráno</option>
+          <option value="day">Přes den</option>
+          <option value="evening">Večer</option>
+        </select>
+        <div class="full"><button class="btn alt" id="btn-add-routine">Přidat rutinu</button></div>
+      </div>
+    </div>
+
+    <h1>Správa odměn</h1>
+    <div id="parent-rewards"></div>
+    <div class="card">
+      <div class="grid">
+        <label>Emoji</label><input id="add-w-emoji" placeholder="🍪" />
+        <label>Název</label><input id="add-w-title" placeholder="Např. Sušenka" />
+        <label>Cena (body)</label><input id="add-w-cost" type="number" inputmode="numeric" value="10" />
+        <div class="full"><button class="btn alt" id="btn-add-reward">Přidat odměnu</button></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="starBurst"></div>
+<div id="heartBurst"></div>
+
+<div class="modal-back" id="modalBack">
+  <div class="modal">
+    <h2 id="modalTitle">Upravit</h2>
+    <div class="grid" style="margin-top:8px">
+      <label>Emoji</label><input id="m-emoji" />
+      <label id="m-lbl-name">Název</label><input id="m-name" />
+      <label id="m-lbl-num">Body</label><input id="m-num" type="number" inputmode="numeric" />
+      <label id="m-lbl-cat">Sekce</label>
+      <select id="m-cat">
+        <option value="morning">Ráno</option>
+        <option value="day">Přes den</option>
+        <option value="evening">Večer</option>
+      </select>
+      <div class="full" style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
+        <button class="btn gray" id="m-cancel">Zrušit</button>
+        <button class="btn ok" id="m-save">Uložit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const todayKey = () => new Date().toISOString().slice(0,10);
+
+const initialState = {
+  activeChildId: 'c1',
+  children: [
+    { id:'c1', emoji:'👧', name:'Adélka', points:0, done:{} },
+    { id:'c2', emoji:'🧒', name:'Ferda',  points:0, done:{} },
+  ],
+  routines: [
+    { id:'r1', emoji:'🛏️', title:'Ustlat postýlku', points:5, cat:'morning', order:0 },
+    { id:'r2', emoji:'🪥', title:'Vyčistit si zuby', points:5, cat:'morning', order:1 },
+    { id:'r3', emoji:'💇', title:'Učesat se', points:5, cat:'morning', order:2 },
+    { id:'r4', emoji:'👕', title:'Obléct se', points:5, cat:'morning', order:3 },
+    { id:'r5', emoji:'🍽️', title:'Uklidit po snídani', points:5, cat:'morning', order:4 },
+    { id:'r6', emoji:'📖', title:'Čtení', points:5, cat:'day', order:0 },
+    { id:'r7', emoji:'🤸', title:'Pohyb', points:5, cat:'day', order:1 },
+    { id:'r8', emoji:'🧹', title:'Úklid po obědě', points:5, cat:'day', order:2 },
+    { id:'r9', emoji:'🎨', title:'Kreativní činnost', points:5, cat:'day', order:3 },
+    { id:'r10', emoji:'🧸', title:'Úklid hraček', points:5, cat:'evening', order:0 },
+    { id:'r11', emoji:'🛁', title:'Koupel', points:5, cat:'evening', order:1 },
+    { id:'r12', emoji:'🪥', title:'Vyčistit si zuby', points:5, cat:'evening', order:2 },
+    { id:'r13', emoji:'🛌', title:'Pyžamo', points:5, cat:'evening', order:3 },
+  ],
+  rewards: [
+    { id:'w1', emoji:'🍪', title:'Sušenka', cost:10, order:0 },
+    { id:'w2', emoji:'🍦', title:'Nanuk', cost:20, order:1 },
+    { id:'w3', emoji:'🍭', title:'Lízátko', cost:15, order:2 },
+    { id:'w4', emoji:'🎁', title:'Dárek', cost:80, order:3 },
+  ]
+};
+
+let state = load();
+function load(){
+  try{
+    const raw = localStorage.getItem('kid-routines-v3');
+    if(!raw){
+      localStorage.setItem('kid-routines-v3', JSON.stringify(initialState));
+      return structuredClone(initialState);
+    }
+    const parsed = JSON.parse(raw);
+    parsed.children ??= initialState.children;
+    parsed.routines ??= initialState.routines;
+    parsed.rewards ??= initialState.rewards;
+    return parsed;
+  }catch(e){ return structuredClone(initialState); }
+}
+function persist(){ localStorage.setItem('kid-routines-v3', JSON.stringify(state)); }
+
+const catLabel = { morning:'Ráno', day:'Přes den', evening:'Večer' };
+function getActiveChild(){ return state.children.find(c=>c.id===state.activeChildId) || state.children[0]; }
+function setActiveChild(id){ state.activeChildId=id; persist(); renderAll(); }
+function uid(p){ return p + Math.random().toString(36).slice(2,8); }
+
+function renderHeader(){ const c=getActiveChild(); $('#points').textContent = c? c.points:0; }
+function renderChildChips(){
+  const wrap = $('#headerChips'); wrap.innerHTML='';
+  const active = getActiveChild();
+  state.children.forEach(c=>{
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (c.id===active.id ? ' active':'');
+    btn.innerHTML = `<span class="e">${c.emoji||'👶'}</span><span>${c.name}</span>`;
+    btn.addEventListener('click', ()=> setActiveChild(c.id));
+    wrap.appendChild(btn);
+  });
+}
+
+function starBurst(){
+  const burst = $('#starBurst'); burst.innerHTML='';
+  for(let i=0;i<42;i++){
+    const s=document.createElement('div');
+    s.className='star'; s.textContent='⭐️';
+    s.style.left=(Math.random()*innerWidth)+'px';
+    s.style.top=(Math.random()*innerHeight)+'px';
+    s.style.animationDelay=(Math.random()*0.2)+'s';
+    burst.appendChild(s);
+  }
+  burst.classList.add('active');
+  setTimeout(()=>{ burst.classList.remove('active'); burst.innerHTML=''; }, 2000);
+}
+function heartBurst(){
+  const burst = $('#heartBurst'); burst.innerHTML='';
+  for(let i=0;i<42;i++){
+    const s=document.createElement('div');
+    s.className='heart'; s.textContent='❤';
+    s.style.left=(Math.random()*innerWidth)+'px';
+    s.style.top=(Math.random()*innerHeight)+'px';
+    s.style.animationDelay=(Math.random()*0.2)+'s';
+    s.style.animationDuration='5s';
+    burst.appendChild(s);
+  }
+  burst.classList.add('active');
+  setTimeout(()=>{ burst.classList.remove('active'); burst.innerHTML=''; }, 5000);
+}
+
+function routineRow(r){
+  const child = getActiveChild();
+  const key = todayKey();
+  const done = !!(child.done[key]?.[r.id]);
+  const wrap = document.createElement('div');
+  wrap.className='card';
+  wrap.innerHTML = `
+    <div class="row">
+      <div class="emoji">${r.emoji||'⭐️'}</div>
+      <div><h2>${r.title}</h2><p>+${r.points} bodů</p></div>
+      <div class="spacer"></div>
+      ${done
+        ? `<span class="tag" title="Splněno dnes">✔️ Splněno</span>`
+        : `<button class="btn ok big do-${r.id}">HOTOVO</button>`}
+    </div>`;
+  if(!done){
+    wrap.querySelector(\`.do-\${r.id}\`).addEventListener('click', ()=>{
+      child.points += Number(r.points)||0;
+      child.done[key] = child.done[key] || {};
+      child.done[key][r.id] = true;
+      persist(); renderHeader(); renderRoutines(); starBurst();
+    });
+  }
+  return wrap;
+}
+function renderRoutines(){
+  const lists = { morning:$('#list-morning'), day:$('#list-day'), evening:$('#list-evening') };
+  Object.values(lists).forEach(n=>n.innerHTML='');
+  const sorted = cat => state.routines.filter(r=>r.cat===cat).sort((a,b)=>(a.order??0)-(b.order??0));
+  sorted('morning').forEach(r=> lists.morning.appendChild(routineRow(r)));
+  sorted('day').forEach(r=> lists.day.appendChild(routineRow(r)));
+  sorted('evening').forEach(r=> lists.evening.appendChild(routineRow(r)));
+}
+
+function renderRewards(){
+  const list = $('#rewards-list'); list.innerHTML='';
+  const child = getActiveChild();
+  state.rewards.sort((a,b)=>(a.order??0)-(b.order??0)).forEach(w=>{
+    const enough = child.points >= w.cost;
+    const card = document.createElement('div');
+    card.className='card';
+    card.innerHTML = `
+      <div class="row">
+        <div class="emoji">${w.emoji||'🎁'}</div>
+        <div><h2>${w.title}</h2><p>${w.cost} bodů</p></div>
+        <div class="spacer"></div>
+        <button class="btn ${enough?'ok':'gray'} big redeem-${w.id}" ${enough?'':'disabled'}>Vybrat</button>
+      </div>`;
+    card.querySelector(\`.redeem-\${w.id}\`).addEventListener('click', ()=>{
+      const ch = getActiveChild();
+      if(ch.points >= w.cost){
+        ch.points -= w.cost; persist(); renderHeader(); renderRewards(); heartBurst();
+      }
+    });
+    list.appendChild(card);
+  });
+}
+
+function renderParent(){
+  const kids = $('#parent-children'); kids.innerHTML='';
+  state.children.forEach(c=>{
+    const row = document.createElement('div');
+    row.className='list-row';
+    row.innerHTML = `
+      <div class="emoji">${c.emoji||'👶'}</div>
+      <div><strong>${c.name}</strong><div class="muted">Body: ${c.points}</div></div>
+      <button class="btn sm alt use-${c.id}">Použít</button>
+      <button class="btn sm alt edit-${c.id}">Upravit</button>
+      <button class="btn sm danger del-${c.id}">Smazat</button>`;
+    row.querySelector(\`.use-\${c.id}\`).addEventListener('click', ()=> setActiveChild(c.id));
+    row.querySelector(\`.edit-\${c.id}\`).addEventListener('click', ()=> openChildEditor(c));
+    row.querySelector(\`.del-\${c.id}\`).addEventListener('click', ()=>{
+      if(state.children.length<=1) return;
+      const idx = state.children.findIndex(x=>x.id===c.id);
+      if(idx>=0){ state.children.splice(idx,1); if(state.activeChildId===c.id){ state.activeChildId=state.children[0].id; } persist(); renderAll(); }
+    });
+    kids.appendChild(row);
+  });
+
+  const rwrap = $('#parent-routines'); rwrap.innerHTML='';
+  state.routines
+    .sort((a,b)=> (a.cat>b.cat?1:-1) || (a.order??0)-(b.order??0))
+    .forEach(r=>{
+      const row = document.createElement('div');
+      row.className='list-row';
+      row.innerHTML = `
+        <div class="emoji">${r.emoji||'⭐️'}</div>
+        <div><strong>${r.title}</strong><div class="muted">+${r.points} bodů</div></div>
+        <button class="btn sm alt up-${r.id}" title="Posunout výš">▲</button>
+        <button class="btn sm alt down-${r.id}" title="Posunout níž">▼</button>
+        <span class="tag label-sec">${catLabel[r.cat]||'—'}</span>
+        <div class="spacer"></div>
+        <button class="btn sm alt edit-${r.id}">Upravit</button>
+        <button class="btn sm danger del-${r.id}">Smazat</button>`;
+      row.querySelector(\`.up-\${r.id}\`).addEventListener('click', ()=> moveRoutine(r.id,-1));
+      row.querySelector(\`.down-\${r.id}\`).addEventListener('click', ()=> moveRoutine(r.id,+1));
+      row.querySelector(\`.edit-\${r.id}\`).addEventListener('click', ()=> openRoutineEditor(r));
+      row.querySelector(\`.del-\${r.id}\`).addEventListener('click', ()=>{
+        const i = state.routines.findIndex(x=>x.id===r.id);
+        if(i>=0){ state.routines.splice(i,1); persist(); renderAll(); }
+      });
+      rwrap.appendChild(row);
+    });
+
+  const wwrap = $('#parent-rewards'); wwrap.innerHTML='';
+  state.rewards
+    .sort((a,b)=>(a.order??0)-(b.order??0))
+    .forEach(w=>{
+      const row = document.createElement('div');
+      row.className='list-row';
+      row.innerHTML = `
+        <div class="emoji">${w.emoji||'🎁'}</div>
+        <div><strong>${w.title}</strong><div class="muted">${w.cost} bodů</div></div>
+        <button class="btn sm alt upw-${w.id}" title="Posunout výš">▲</button>
+        <button class="btn sm alt downw-${w.id}" title="Posunout níž">▼</button>
+        <div class="spacer"></div>
+        <button class="btn sm alt editw-${w.id}">Upravit</button>
+        <button class="btn sm danger delw-${w.id}">Smazat</button>`;
+      row.querySelector(\`.upw-\${w.id}\`).addEventListener('click', ()=> moveReward(w.id,-1));
+      row.querySelector(\`.downw-\${w.id}\`).addEventListener('click', ()=> moveReward(w.id,+1));
+      row.querySelector(\`.editw-\${w.id}\`).addEventListener('click', ()=> openRewardEditor(w));
+      row.querySelector(\`.delw-\${w.id}\`).addEventListener('click', ()=>{
+        const i = state.rewards.findIndex(x=>x.id===w.id);
+        if(i>=0){ state.rewards.splice(i,1); persist(); renderAll(); }
+      });
+      wwrap.appendChild(row);
+    });
+}
+
+function moveRoutine(id, delta){
+  const r = state.routines.find(x=>x.id===id); if(!r) return;
+  const group = state.routines.filter(x=>x.cat===r.cat).sort((a,b)=>(a.order??0)-(b.order??0));
+  const idx = group.findIndex(x=>x.id===id); if(idx<0) return;
+  const swapWith = group[idx+delta]; if(!swapWith) return;
+  const A = state.routines.find(x=>x.id===group[idx].id);
+  const B = state.routines.find(x=>x.id===swapWith.id);
+  const tmp = A.order??0; A.order = B.order??0; B.order = tmp;
+  persist(); renderParent(); renderRoutines();
+}
+function moveReward(id, delta){
+  const arr = state.rewards.sort((a,b)=>(a.order??0)-(b.order??0));
+  const idx = arr.findIndex(x=>x.id===id); if(idx<0) return;
+  const swapWith = arr[idx+delta]; if(!swapWith) return;
+  const A = state.rewards.find(x=>x.id===arr[idx].id);
+  const B = state.rewards.find(x=>x.id===swapWith.id);
+  const tmp = A.order??0; A.order = B.order??0; B.order = tmp;
+  persist(); renderParent(); renderRewards();
+}
+
+let modalCtx = null;
+function openModal(){ $('#modalBack').style.display='flex'; }
+function closeModal(){ $('#modalBack').style.display='none'; modalCtx=null; }
+$('#m-cancel').addEventListener('click', closeModal);
+$('#m-save').addEventListener('click', ()=>{
+  if(!modalCtx) return;
+  const em = $('#m-emoji').value || modalCtx.emojiFallback;
+  const nm = $('#m-name').value.trim();
+  const num = Number($('#m-num').value||0);
+  if(modalCtx.type==='routine'){
+    const r = state.routines.find(x=>x.id===modalCtx.id); if(r){
+      r.emoji = em; if(nm) r.title = nm; if(!isNaN(num)) r.points = num;
+      r.cat = $('#m-cat').value;
+    }
+    persist(); renderAll(); closeModal();
+  }else if(modalCtx.type==='reward'){
+    const w = state.rewards.find(x=>x.id===modalCtx.id); if(w){
+      w.emoji = em; if(nm) w.title = nm; if(!isNaN(num)) w.cost = num;
+    }
+    persist(); renderAll(); closeModal();
+  }else if(modalCtx.type==='child'){
+    const c = state.children.find(x=>x.id===modalCtx.id); if(c){
+      c.emoji = em; if(nm) c.name = nm;
+    }
+    persist(); renderAll(); closeModal();
+  }
+});
+function openRoutineEditor(r){
+  modalCtx = { type:'routine', id:r.id, emojiFallback:'⭐️' };
+  $('#modalTitle').textContent = 'Upravit rutinu';
+  $('#m-emoji').value = r.emoji||''; $('#m-name').value = r.title||'';
+  $('#m-num').value = r.points||0; $('#m-cat').value = r.cat||'morning';
+  $('#m-lbl-cat').style.display=''; $('#m-cat').style.display=''; $('#m-lbl-num').textContent='Body';
+  openModal();
+}
+function openRewardEditor(w){
+  modalCtx = { type:'reward', id:w.id, emojiFallback:'🎁' };
+  $('#modalTitle').textContent = 'Upravit odměnu';
+  $('#m-emoji').value = w.emoji||''; $('#m-name').value = w.title||'';
+  $('#m-num').value = w.cost||0;
+  $('#m-lbl-cat').style.display='none'; $('#m-cat').style.display='none'; $('#m-lbl-num').textContent='Cena (body)';
+  openModal();
+}
+function openChildEditor(c){
+  modalCtx = { type:'child', id:c.id, emojiFallback:'👶' };
+  $('#modalTitle').textContent = 'Upravit dítě';
+  $('#m-emoji').value = c.emoji||''; $('#m-name').value = c.name||'';
+  $('#m-num').value = '';
+  $('#m-lbl-cat').style.display='none'; $('#m-cat').style.display='none'; $('#m-lbl-num').textContent='(ignoruj)';
+  openModal();
+}
+
+$('#btn-add-child').addEventListener('click', ()=>{
+  const emoji = ($('#add-child-emoji').value || '👶').trim();
+  const name  = ($('#add-child-name').value  || 'Dítě').trim();
+  const id = uid('c'); state.children.push({ id, emoji, name, points:0, done:{} });
+  persist(); renderAll();
+  $('#add-child-emoji').value=''; $('#add-child-name').value='';
+});
+$('#btn-add-routine').addEventListener('click', ()=>{
+  const emoji = ($('#add-r-emoji').value || '⭐️').trim();
+  const title = ($('#add-r-title').value || '').trim();
+  const points= Number($('#add-r-points').value||0);
+  const cat   = $('#add-r-cat').value || 'morning';
+  if(!title) return;
+  const maxOrder = Math.max(-1, ...state.routines.filter(r=>r.cat===cat).map(r=>r.order??0));
+  state.routines.push({ id:uid('r'), emoji, title, points:isNaN(points)?0:points, cat, order:maxOrder+1 });
+  persist(); renderAll();
+  $('#add-r-emoji').value=''; $('#add-r-title').value=''; $('#add-r-points').value='5'; $('#add-r-cat').value='morning';
+});
+$('#btn-add-reward').addEventListener('click', ()=>{
+  const emoji = ($('#add-w-emoji').value || '🎁').trim();
+  const title = ($('#add-w-title').value || '').trim();
+  const cost  = Number($('#add-w-cost').value||0);
+  if(!title) return;
+  const maxOrder = Math.max(-1, ...state.rewards.map(w=>w.order??0));
+  state.rewards.push({ id:uid('w'), emoji, title, cost:isNaN(cost)?0:cost, order:maxOrder+1 });
+  persist(); renderAll();
+  $('#add-w-emoji').value=''; $('#add-w-title').value=''; $('#add-w-cost').value='10';
+});
+
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const id = t.dataset.tab;
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    $('#'+id).classList.add('active');
+    renderHeader();
+    if(id==='routines') renderRoutines();
+    if(id==='rewards') renderRewards();
+    if(id==='parent') renderParent();
+  });
+});
+
+function renderAll(){ renderChildChips(); renderHeader(); renderRoutines(); renderRewards(); renderParent(); }
+renderAll();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=> {
+    navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
